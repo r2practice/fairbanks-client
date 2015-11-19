@@ -12,6 +12,7 @@ module Fairbanks
     TEMP_PATH      = "#{Dir.pwd}/tmp/downloads"
 
     NOT_LOGGED_MSG = 'Not logged!'
+    QUARTER_NOT_FOUND_MSG = 'Quarter not found or wrong!'
 
     def initialize(options = {})
       @options = options
@@ -20,10 +21,16 @@ module Fairbanks
 
     def download_presonal_roster(path = nil)
       unless login.link_with(text: 'Logout').nil?
-        file_link     = roster_page.link_with(dom_class: 'export-excel')
-        file          = @agent.get "#{MAIN_URL}/#{file_link.uri.to_s}"
-        file.filename = path || "#{TEMP_PATH}/#{file.filename}"
-        file.save!
+        page = roster_page_by_quarter
+        if page.nil?
+          msg = QUARTER_NOT_FOUND_MSG
+        else
+          file_link     = page.link_with(dom_class: 'export-excel')
+          file          = @agent.get "#{MAIN_URL}/#{file_link.uri.to_s}"
+          file.filename = path || "#{TEMP_PATH}/#{file.filename}"
+          file.save!
+          logout
+        end
       else
         msg = NOT_LOGGED_MSG
       end
@@ -37,6 +44,14 @@ module Fairbanks
 
     def roster_page
       @agent.get ROSTER_URL
+    end
+
+    def roster_page_by_quarter
+      form   = roster_page.form_with(action: 'manage/participant/list.html')
+      option = form.field_with(name: 'quarterId').option_with(text: quarter_option_text)
+      return nil if option.nil?
+      option.click
+      form.submit
     end
 
     def login_page
@@ -53,6 +68,20 @@ module Fairbanks
 
     def logged_in?
       !roster_page.link_with(text: 'Logout').nil?
+    end
+
+    def logout
+      roster_page.link_with(text: 'Logout').click
+    end
+
+    def current_quarter
+      ((Time.now.month - 1) / 3) + 1
+    end
+
+    def quarter_option_text
+      quarter = @options[:quarter] || current_quarter
+      year    = @options[:year] || Time.now.year
+      "Closed Quarter: Q#{quarter}-#{Date.new(year.to_i).strftime('%y')}"
     end
 
   end
