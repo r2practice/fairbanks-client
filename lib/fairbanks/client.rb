@@ -16,10 +16,14 @@ module Fairbanks
 
     def initialize(options = {})
       @options = options
+      @quarter = @options[:quarter] || current_quarter
+      @year    = @options[:year] || Time.now.year
       @agent   = Mechanize.new
     end
 
-    def download_presonal_roster(path = nil)
+    def download_presonal_roster(filename = nil)
+      filename = filename || default_filename
+      return errors("#{filename} not file!", filename) if File.directory?(filename)
       unless login.link_with(text: 'Logout').nil?
         page = roster_page_by_quarter
         if page.nil?
@@ -27,19 +31,19 @@ module Fairbanks
         else
           file_link     = page.link_with(dom_class: 'export-excel')
           file          = @agent.get "#{MAIN_URL}/#{file_link.uri.to_s}"
-          file.filename = path || "#{TEMP_PATH}/#{file.filename}"
+          file.filename = filename
           file.save!
-          logout
         end
+        logout
       else
         msg = NOT_LOGGED_MSG
       end
 
-      if msg.nil?
-        { result: true, file: file.filename }
-      else
-        { result: false, errors: msg, file: path }
-      end
+      msg.nil? ? { result: true, file: file.filename } : errors(msg, filename)
+    end
+
+    def errors(msg, filename)
+      { result: false, errors: msg, file: filename }
     end
 
     def roster_page
@@ -79,9 +83,11 @@ module Fairbanks
     end
 
     def quarter_option_text
-      quarter = @options[:quarter] || current_quarter
-      year    = @options[:year] || Time.now.year
-      "Closed Quarter: Q#{quarter}-#{Date.new(year.to_i).strftime('%y')}"
+      "Closed Quarter: Q#{@quarter}-#{Date.new(@year.to_i).strftime('%y')}"
+    end
+
+    def default_filename
+      "#{TEMP_PATH}/roster_for_#{@options[:login]}_q#{@quarter}_#{@year}_#{Time.now.strftime("%Y-%m-%d_%H:%M:%S")}.xls"
     end
 
   end
