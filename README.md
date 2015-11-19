@@ -20,6 +20,14 @@ Or install it yourself as:
 
 TODO: Write usage instructions here
 
+
+Download personal roster:
+
+```ruby
+client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2})
+client.download_presonal_roster('path-to-file/roster.xls')
+```
+
 ## Contributing
 
 1. Fork it ( https://github.com/[my-github-username]/fairbanks-client/fork )
