@@ -6,6 +6,7 @@ module Fairbanks
     LOGIN_URL      = "#{MAIN_URL}/login"
     DASHBOARD_URL  = "#{MAIN_URL}/manage"
     ROSTER_URL     = "#{DASHBOARD_URL}/participant/list.html"
+    INVOICE_URL    = "#{DASHBOARD_URL}/finance/"
 
     LOGIN_ACTION   = '/login/index.html'
 
@@ -14,11 +15,36 @@ module Fairbanks
     NOT_LOGGED_MSG = 'Not logged!'
     QUARTER_NOT_FOUND_MSG = 'Quarter not found or wrong!'
 
+    UPLOADER_FILE_TYPES = { invoice: 'Invoice', expenditures: 'Expenditures', ratedoc: 'RateDoc' }
+    UPLOAD_PREFIX = 'moUpload'
+
     def initialize(options = {})
       @options = options
       @quarter = @options[:quarter] || current_quarter
       @year    = @options[:year] || Time.now.year
       @agent   = Mechanize.new
+    end
+
+    def upload_personal_data(files = {invoice: nil, expenditures: nil, ratedoc: nil})
+      unless login.link_with(text: 'Logout').nil?
+        page = invoice_page_by_quarter
+        if page.nil?
+          msg = QUARTER_NOT_FOUND_MSG
+        else
+          files.each do |key, filename|
+            return errors("File not found!", filename) unless File.exist?(filename)
+            upload_page = page.link_with(href: /#{UPLOAD_PREFIX}#{UPLOADER_FILE_TYPES[key]}/).click
+            upload_form = upload_page.forms.last
+            upload_form.file_uploads.first.file_name = filename
+            upload_form.submit
+          end
+        end
+        logout
+      else
+        msg = NOT_LOGGED_MSG
+      end
+
+      msg.nil? ? { result: true } : { result: false, errors: msg }
     end
 
     def download_presonal_roster(filename = nil)
@@ -48,6 +74,18 @@ module Fairbanks
 
     def roster_page
       @agent.get ROSTER_URL
+    end
+
+    def invoice_page
+      @agent.get INVOICE_URL
+    end
+
+    def invoice_page_by_quarter
+      form   = invoice_page.form_with(action: '/manage/finance/steps.html')
+      option = form.field_with(name: 'sharsId').option_with(text: quarter_option_text('Open'))
+      return nil if option.nil?
+      option.click
+      form.submit
     end
 
     def roster_page_by_quarter
@@ -82,8 +120,9 @@ module Fairbanks
       ((Time.now.month - 1) / 3) + 1
     end
 
-    def quarter_option_text
-      "Closed Quarter: Q#{@quarter}-#{Date.new(@year.to_i).strftime('%y')}"
+    def quarter_option_text(type = 'Closed')
+      space = type == 'Closed' ? '' : ' '
+      "#{type} Quarter: #{space}Q#{@quarter}-#{Date.new(@year.to_i).strftime('%y')}"
     end
 
     def default_filename

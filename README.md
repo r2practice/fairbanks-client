@@ -28,6 +28,19 @@ client = Fairbanks::Client.new({login: 'username', password: 'password', quarter
 client.download_presonal_roster('path-to-file/roster.xls')
 ```
 
+Download personal data:
+
+```ruby
+client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2})
+client.upload_personal_data({invoice: claim_file, expenditures: cert_file, ratedoc: mv_file})
+```
+
+or:
+
+```ruby
+client.upload_personal_data({expenditures: cert_file})
+```
+
 ## Contributing
 
 1. Fork it ( https://github.com/[my-github-username]/fairbanks-client/fork )
