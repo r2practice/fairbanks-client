@@ -17,6 +17,7 @@ module Fairbanks
 
     UPLOADER_FILE_TYPES = { invoice: 'Invoice', expenditures: 'Expenditures', ratedoc: 'RateDoc' }
     UPLOAD_PREFIX = 'moUpload'
+    UPLOAD_COMPLETED_STATUS = 'complete'
 
     def initialize(options = {})
       @options = options
@@ -47,17 +48,19 @@ module Fairbanks
       msg.nil? ? { result: true } : { result: false, errors: msg }
     end
 
+    def data_uploaded_for?(file_type = nil)
+
+    end
+
     def download_presonal_roster(filename = nil)
-      filename = filename || default_filename
-      return errors("#{filename} not file!", filename) if File.directory?(filename)
+      return errors("#{filename} not file!", filename) if !filename.nil? && File.directory?(filename)
       unless login.link_with(text: 'Logout').nil?
         page = roster_page_by_quarter
         if page.nil?
           msg = QUARTER_NOT_FOUND_MSG
         else
-          file_link     = page.link_with(dom_class: 'export-excel')
-          file          = @agent.get "#{MAIN_URL}/#{file_link.uri.to_s}"
-          file.filename = filename
+          file = page.link_with(dom_class: 'export-excel').click
+          file.filename = filename unless filename.nil?
           file.save!
         end
         logout
