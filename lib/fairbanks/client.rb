@@ -37,7 +37,7 @@ module Fairbanks
             upload_page = page.link_with(href: /#{UPLOAD_PREFIX}#{UPLOADER_FILE_TYPES[key]}/).click
             upload_form = upload_page.forms.last
             upload_form.file_uploads.first.file_name = filename
-            upload_form.submit
+            upload_form.submit(upload_form.buttons.first)
           end
         end
         logout
