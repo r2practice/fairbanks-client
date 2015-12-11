@@ -49,7 +49,35 @@ module Fairbanks
     end
 
     def data_uploaded_for?(file_type = nil)
+      return {error: NOT_LOGGED_MSG} if login.link_with(text: 'Logout').nil?
+      page = invoice_page_by_quarter
+      upload_link = page.link_with(href: /#{UPLOAD_PREFIX}#{UPLOADER_FILE_TYPES[file_type]}/)
+      upload_link.node.parent.children.last.name == 'p'
+    end
 
+    def ready_for_certify?
+      UPLOADER_FILE_TYPES.all?{ |type| data_uploaded_for?(type.first) }
+    end
+
+    def personal_data_certified?
+      return {error: NOT_LOGGED_MSG} if login.link_with(text: 'Logout').nil?
+      page = invoice_page_by_quarter
+      certify_link = page.link_with(text: /Certify/)
+      unless certify_link.nil?
+        certify_link.node.parent.attributes['class'].value.strip == UPLOAD_COMPLETED_STATUS
+      else
+        false
+      end
+    end
+
+    def certify_personal_data
+      return {error: NOT_LOGGED_MSG} if login.link_with(text: 'Logout').nil?
+      page = invoice_page_by_quarter
+      certify_link = page.link_with(text: /Certify/)
+      if ready_for_certify? && !certify_link.nil?
+        certify_link.click
+      end
+      {result: true}
     end
 
     def download_presonal_roster(filename = nil)

@@ -40,3 +40,18 @@ or:
 ```ruby
 client.upload_personal_data({expenditures: cert_file})
 ```
+
+Check personal data uploading:
+
+```ruby
+client.data_uploaded_for?(:invoice) # values: :invoice, :expenditures, :ratedoc
+client.ready_for_certify? # check upload all files
+client.personal_data_certified? # check data sertification
+
+```
+
+Sertify personal data:
+
+```ruby
+client.certify_personal_data
+```
