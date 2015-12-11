@@ -75,7 +75,8 @@ module Fairbanks
       page = invoice_page_by_quarter
       certify_link = page.link_with(text: /Certify/)
       if ready_for_certify? && !certify_link.nil?
-        certify_link.click
+        certify_form = certify_link.click.forms.last
+        certify_form.submit(certify_form.buttons.last)
       end
       {result: true}
     end
