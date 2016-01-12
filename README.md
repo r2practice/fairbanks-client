@@ -18,9 +18,6 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
-
-
 Download personal roster:
 
 ```ruby
@@ -54,4 +51,14 @@ Sertify personal data:
 
 ```ruby
 client.certify_personal_data
+```
+
+Accounts with districs:
+
+```ruby
+client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2, district_name: 'wrong_name'})
+client.download_presonal_roster('path-to-file/roster.xls') #=> {:error=>"Invalid district name!"}
+
+client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2, district_name: 'good_name'})
+client.download_presonal_roster('roster.xls') #=> => {:result=>true, :file=>"roster.xls"}
 ```
