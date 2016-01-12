@@ -70,7 +70,7 @@ module Fairbanks
       return {error: NOT_LOGGED_MSG} if login.link_with(text: 'Logout').nil?
       return {error: INVALID_DISTRICT} if page_by_district(INVOICE_URL).nil?
       page = invoice_page_by_quarter
-      certify_link = page.link_with(text: /Certify/)
+      certify_link = page.link_with(href: /moCertify/)
       unless certify_link.nil?
         certify_link.node.parent.attributes['class'].value.strip == UPLOAD_COMPLETED_STATUS
       else
