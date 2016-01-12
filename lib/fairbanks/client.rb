@@ -141,8 +141,10 @@ module Fairbanks
 
     def page_by_district(page_url)
       @agent.get page_url
-      return nil unless has_districts? && has_district?(@district)
-      district_link(@district).click
+      if has_districts?
+        return nil unless has_district?(@district)
+        district_link(@district).click
+      end
     end
 
     def login_page
