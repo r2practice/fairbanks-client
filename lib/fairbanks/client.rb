@@ -5,7 +5,7 @@ module Fairbanks
     MAIN_URL       = 'https://mac.fairbanksllc.com'
     LOGIN_URL      = "#{MAIN_URL}/login"
     DASHBOARD_URL  = "#{MAIN_URL}/manage"
-    ROSTER_URL     = "#{DASHBOARD_URL}/participant/list.html"
+    ROSTER_URL     = "#{DASHBOARD_URL}/participant/"
     INVOICE_URL    = "#{DASHBOARD_URL}/finance/"
 
     LOGIN_ACTION   = '/login/index.html'
@@ -14,20 +14,26 @@ module Fairbanks
 
     NOT_LOGGED_MSG = 'Not logged!'
     QUARTER_NOT_FOUND_MSG = 'Quarter not found or wrong!'
+    INVALID_DISTRICT = 'Invalid district name!'
 
     UPLOADER_FILE_TYPES = { invoice: 'Invoice', expenditures: 'Expenditures', ratedoc: 'RateDoc' }
     UPLOAD_PREFIX = 'moUpload'
     UPLOAD_COMPLETED_STATUS = 'complete'
 
+    DISTRICTS_LINKS_CSS = 'table#district-view tr td.name a'
+
     def initialize(options = {})
-      @options = options
-      @quarter = @options[:quarter] || current_quarter
-      @year    = @options[:year] || Time.now.year
-      @agent   = Mechanize.new
+      @options  = options
+      @quarter  = @options[:quarter] || current_quarter
+      @year     = @options[:year] || Time.now.year
+      @district = @options[:district_name]
+      @agent    = Mechanize.new
     end
 
     def upload_personal_data(files = {invoice: nil, expenditures: nil, ratedoc: nil})
       unless login.link_with(text: 'Logout').nil?
+        return {error: INVALID_DISTRICT} if page_by_district(INVOICE_URL).nil?
+
         page = invoice_page_by_quarter
         if page.nil?
           msg = QUARTER_NOT_FOUND_MSG
@@ -50,6 +56,7 @@ module Fairbanks
 
     def data_uploaded_for?(file_type = nil)
       return {error: NOT_LOGGED_MSG} if login.link_with(text: 'Logout').nil?
+      return {error: INVALID_DISTRICT} if page_by_district(INVOICE_URL).nil?
       page = invoice_page_by_quarter
       upload_link = page.link_with(href: /#{UPLOAD_PREFIX}#{UPLOADER_FILE_TYPES[file_type]}/)
       upload_link.node.parent.children.last.name == 'p'
@@ -61,6 +68,7 @@ module Fairbanks
 
     def personal_data_certified?
       return {error: NOT_LOGGED_MSG} if login.link_with(text: 'Logout').nil?
+      return {error: INVALID_DISTRICT} if page_by_district(INVOICE_URL).nil?
       page = invoice_page_by_quarter
       certify_link = page.link_with(text: /Certify/)
       unless certify_link.nil?
@@ -72,6 +80,7 @@ module Fairbanks
 
     def certify_personal_data
       return {error: NOT_LOGGED_MSG} if login.link_with(text: 'Logout').nil?
+      return {error: INVALID_DISTRICT} if page_by_district(INVOICE_URL).nil?
       page = invoice_page_by_quarter
       certify_link = page.link_with(text: /Certify/)
       if ready_for_certify? && !certify_link.nil?
@@ -84,6 +93,8 @@ module Fairbanks
     def download_presonal_roster(filename = nil)
       return errors("#{filename} not file!", filename) if !filename.nil? && File.directory?(filename)
       unless login.link_with(text: 'Logout').nil?
+        return {error: INVALID_DISTRICT} if page_by_district(ROSTER_URL).nil?
+
         page = roster_page_by_quarter
         if page.nil?
           msg = QUARTER_NOT_FOUND_MSG
@@ -113,7 +124,7 @@ module Fairbanks
     end
 
     def invoice_page_by_quarter
-      form   = invoice_page.form_with(action: '/manage/finance/steps.html')
+      form   = @agent.page.form_with(action: '/manage/finance/steps.html')
       option = form.field_with(name: 'sharsId').option_with(text: quarter_option_text('Open'))
       return nil if option.nil?
       option.click
@@ -121,11 +132,17 @@ module Fairbanks
     end
 
     def roster_page_by_quarter
-      form   = roster_page.form_with(action: 'manage/participant/list.html')
+      form   = @agent.page.form_with(action: 'manage/participant/list.html')
       option = form.field_with(name: 'quarterId').option_with(text: quarter_option_text)
       return nil if option.nil?
       option.click
       form.submit
+    end
+
+    def page_by_district(page_url)
+      @agent.get page_url
+      return nil unless has_districts? && has_district?(@district)
+      district_link(@district).click
     end
 
     def login_page
@@ -148,6 +165,16 @@ module Fairbanks
       roster_page.link_with(text: 'Logout').click
     end
 
+    def has_districts?
+      districts_links.any?
+    end
+
+    def has_district?(district_name)
+      !district_link(district_name).nil?
+    end
+
+    private
+
     def current_quarter
       ((Time.now.month - 1) / 3) + 1
     end
@@ -159,6 +186,21 @@ module Fairbanks
 
     def default_filename
       "#{TEMP_PATH}/roster_for_#{@options[:login]}_q#{@quarter}_#{@year}_#{Time.now.strftime("%Y-%m-%d_%H:%M:%S")}.xls"
+    end
+
+    def districts_links
+      return [] if @agent.page.nil?
+      html  = Nokogiri::HTML(@agent.page.body, 'UTF-8')
+      html.css(DISTRICTS_LINKS_CSS)
+    end
+
+    def district_link(district_name)
+      links = districts_links
+      return nil if links.empty?
+      link = links.at("a[title='View #{district_name}']")
+      return nil if link.nil?
+
+      @agent.page.link_with(href: link['href'])
     end
 
   end
