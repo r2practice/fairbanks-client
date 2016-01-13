@@ -140,11 +140,12 @@ module Fairbanks
     end
 
     def page_by_district(page_url)
-      @agent.get page_url
+      page = @agent.get page_url
       if has_districts?
         return nil unless has_district?(@district)
         district_link(@district).click
       end
+      page
     end
 
     def login_page
@@ -168,11 +169,15 @@ module Fairbanks
     end
 
     def has_districts?
-      districts_links.any?
+      login && roster_page && districts_links.any?
     end
 
     def has_district?(district_name)
-      !district_link(district_name).nil?
+      login && roster_page && !district_link(district_name).nil?
+    end
+
+    def districts
+      login && roster_page ? districts_links.map(&:text) : []
     end
 
     private

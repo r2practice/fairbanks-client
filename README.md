@@ -61,4 +61,15 @@ client.download_presonal_roster('path-to-file/roster.xls') #=> {:error=>"Invalid
 
 client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2, district_name: 'good_name'})
 client.download_presonal_roster('roster.xls') #=> => {:result=>true, :file=>"roster.xls"}
+
+```
+districts checking:
+
+```ruby
+client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2, district_name: 'wrong_name'})
+
+client.has_districts? #=> true or false
+client.has_district?(district_name) #=> true or false
+client.districts #=> array
+
 ```
