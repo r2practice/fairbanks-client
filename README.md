@@ -22,7 +22,7 @@ Download personal roster:
 
 ```ruby
 client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2})
-client.download_presonal_roster('path-to-file/roster.xls')
+client.download_personal_roster('path-to-file/roster.xls')
 ```
 
 Upload personal data:
@@ -57,10 +57,10 @@ Accounts with districs:
 
 ```ruby
 client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2, district_name: 'wrong_name'})
-client.download_presonal_roster('path-to-file/roster.xls') #=> {:error=>"Invalid district name!"}
+client.download_personal_roster('path-to-file/roster.xls') #=> {:error=>"Invalid district name!"}
 
 client = Fairbanks::Client.new({login: 'username', password: 'password', quarter: 2, district_name: 'good_name'})
-client.download_presonal_roster('roster.xls') #=> => {:result=>true, :file=>"roster.xls"}
+client.download_personal_roster('roster.xls') #=> => {:result=>true, :file=>"roster.xls"}
 
 ```
 districts checking:
