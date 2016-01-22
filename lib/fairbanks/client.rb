@@ -116,7 +116,7 @@ module Fairbanks
     end
 
     def roster_page
-      @agent.get ROSTER_URL
+      @agent.get "#{ROSTER_URL}/list.html"
     end
 
     def invoice_page
@@ -132,6 +132,7 @@ module Fairbanks
     end
 
     def roster_page_by_quarter
+      roster_page
       form   = @agent.page.form_with(action: 'manage/participant/list.html')
       option = form.field_with(name: 'quarterId').option_with(text: quarter_option_text)
       return nil if option.nil?
