@@ -90,7 +90,7 @@ module Fairbanks
       {result: true}
     end
 
-    def download_presonal_roster(filename = nil)
+    def download_personal_roster(filename = nil)
       return errors("#{filename} not file!", filename) if !filename.nil? && File.directory?(filename)
       unless login.link_with(text: 'Logout').nil?
         return {error: INVALID_DISTRICT} if page_by_district(ROSTER_URL).nil?
