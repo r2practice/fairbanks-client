@@ -32,9 +32,11 @@ module Fairbanks
 
     def upload_personal_data(files = {invoice: nil, expenditures: nil, ratedoc: nil})
       unless login.link_with(text: 'Logout').nil?
-        return {error: INVALID_DISTRICT} if page_by_district(INVOICE_URL).nil?
+        invoice_page
+        page = page_by_district
+        return {error: INVALID_DISTRICT} if page.nil?
 
-        page = invoice_page_by_quarter
+        page ||= invoice_page_by_quarter
         if page.nil?
           msg = QUARTER_NOT_FOUND_MSG
         else
@@ -46,7 +48,6 @@ module Fairbanks
             upload_form.submit(upload_form.buttons.first)
           end
         end
-        logout
       else
         msg = NOT_LOGGED_MSG
       end
@@ -93,9 +94,11 @@ module Fairbanks
     def download_personal_roster(filename = nil)
       return errors("#{filename} not file!", filename) if !filename.nil? && File.directory?(filename)
       unless login.link_with(text: 'Logout').nil?
-        return {error: INVALID_DISTRICT} if page_by_district(ROSTER_URL).nil?
+        roster_page
+        page = page_by_district
+        return {error: INVALID_DISTRICT} if page.nil?
 
-        page = roster_page_by_quarter
+        page ||= roster_page_by_quarter
         if page.nil?
           msg = QUARTER_NOT_FOUND_MSG
         else
@@ -103,7 +106,6 @@ module Fairbanks
           file.filename = filename unless filename.nil?
           file.save!
         end
-        logout
       else
         msg = NOT_LOGGED_MSG
       end
@@ -116,7 +118,7 @@ module Fairbanks
     end
 
     def roster_page
-      @agent.get "#{ROSTER_URL}/list.html"
+      @agent.page.link_with(text: /Personnel Roster/).click
     end
 
     def invoice_page
@@ -132,7 +134,6 @@ module Fairbanks
     end
 
     def roster_page_by_quarter
-      roster_page
       form   = @agent.page.form_with(action: 'manage/participant/list.html')
       option = form.field_with(name: 'quarterId').option_with(text: quarter_option_text)
       return nil if option.nil?
@@ -140,11 +141,11 @@ module Fairbanks
       form.submit
     end
 
-    def page_by_district(page_url)
-      page = @agent.get page_url
+    def page_by_district
+      page = @agent.page
       if has_districts?
         return nil unless has_district?(@district)
-        district_link(@district).click
+        page = district_link(@district).click
       end
       page
     end
